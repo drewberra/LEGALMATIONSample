@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Basic XMl Uploader and Database</title>
+</head>
+<style>
+    ol {
+        list-style-type: none;
+        counter-reset: elementcounter;
+        padding-left: 0;
+    }
+
+    li:before {
+        content: "Step " counter(elementcounter) ". ";
+        counter-increment: elementcounter;
+        font-weight: bold;
+    }
+</style>
+<body>
+    <h1> Welcome to Drew Berra's XML uploading & Parsing assessment for Legalmation!</h1>
+    <ol>
+        <li>Upload as many files as many xml files as you would like by clicking on 'Go to Uploader'!</li>
+        <li>Query the data base to find the plaintiff's and defendant's for each file by
+        clicking 'Query'!</li>
+        <li>Profit!</li>
+    </ol>
+    <form action = "" method = "POST">
+        <input type="submit" name="button" value="Go to uploader">
+        <input type="submit" name="button" value="Query">
+    </form>
+
+</body>
+</html>
