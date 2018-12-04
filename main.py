@@ -1,13 +1,19 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from werkzeug import secure_filename
 import xml.etree.ElementTree as ET
 import re
+# from flask_rest_jsonapi import Api, ResourceDetail, ResourceList
+# from flask_sqlalchemy import SQLAlchemy
+# from marshmallow_jsonapi.flask import Schema
+# from marshmallow_jsonapi import fields
 
 UPLOAD_FOLDER = '/tmp/'
 ALLOWED_EXTENSIONS = set(['xml'])
 
 # Global Variables
+parsed_info = list()
+file_data_points = {}
 storage_file_name = 'ParsedData.txt'
 delimiter = '|||'
 
@@ -25,6 +31,9 @@ def allowed_file(filename):
 # and then search in this area to find the names of them
 # After this point we can store them in an sqllite db that can later to be queried
 def xml_parse(fname):
+    global file_data_points
+    global parsed_info
+
     tree = ET.parse(fname)
     relevantText = list()
     for elem in tree.getiterator():
@@ -40,9 +49,15 @@ def xml_parse(fname):
     storage_file.write(fname)
     storage_file.close()
 
+    file_data_points['file'] = fname
+
     # Removes instances of 'None' from the text
     relevantText[:] = [x for x in relevantText if x != 'None']
     text_search(relevantText)
+    print(file_data_points)
+    parsed_info.append(file_data_points.copy())
+    print(parsed_info)
+    file_data_points.clear()
     print(relevantText)
 
 
@@ -160,6 +175,8 @@ def plaint_description(plaint_text, text):
 
 
 def text_search(text):
+    global file_data_points
+
     plaint_text = {}
     def_text = {}
     i = 0
@@ -191,8 +208,10 @@ def text_search(text):
     storage_file.write(delimiter + plaint_string)
     storage_file.write(delimiter + def_string)
     storage_file.write("\n")
-
     storage_file.close()
+
+    file_data_points['Plaintiff'] = plaint_string
+    file_data_points['Defendants'] = def_string
 
 
 # Currently only allows the upload of one file
@@ -260,6 +279,11 @@ def display_data():
         for i in range(data_points):
             data_history.append(data_lines[i].split(delimiter))
     return render_template('data_display.html', data_points=data_points, data_history=data_history)
+
+
+@app.route('/api/all', methods=['GET'])
+def display_api():
+    return jsonify(parsed_info)
 
 
 if __name__ == '__main__':
