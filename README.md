@@ -2,7 +2,7 @@
 Thank you for the opportunity to work on this assessment, it has beem a pleasure 
 and I hope you are happy with the work and skills that I have demonstrated here.
 
-### Imports Used
+### Setting Up
 I completed this project using Python/Flask, and thusly imported several modules 
 from Flask and other packages which need to be installed. You can do this by either 
 using `pip install` and individually installing all of the packages laid out below (Flask, Flask-RESTFul, etc.) or 
@@ -10,9 +10,33 @@ you can use `pip install -r requirements.txt`.
 
 In order to make the installation of the required modules and packages easy, i used
 `pip freeze` to list all of my install libraries and their dependencies in `requirements.txt`.
-So in order to ensure that the application is running in the intended environment and functioning properly,
-create a new virtual environment for the program, and then do `pip install -r
-requirements.txt` if you choose to use this method over installing the packages individually.
+So in order to ensure that the application is running in the intended environment and functioning properly follow
+these steps:
+1. Download the files from this github
+2. Navigate to where these files were downloaded and create a new virtual environment
+    * I Did this using _virtualenv_
+    * Linux/MacOS
+        * `python3.6 -m virtualenv env`
+    * Windows _assuming python 3 or later_
+        * `py -m virtualenv env`
+3. Activate the virtual environment
+    * Linux/MacOS
+        * `source env/bin/activate`
+    * Windows
+        * ./env/Scripts/activate
+4. Install the libraries from requirements file
+    * `pip install -r requirements.txt`
+        * This is for linux and MacOS assume its the same or close for windows
+5. Once done testing program you can leave the virtual environment by putting the following in
+terminal
+    * `deactivate`
+
+**_Note:_** If having trouble with this check out [this](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/) link for assitance.
+    
+------
+
+### Imports Used
+
 ##### Modules From flask Package:
 * Flask
 * render_template
@@ -34,6 +58,8 @@ requirements.txt` if you choose to use this method over installing the packages 
 * atexit
 * re
 
+---
+
 ### Running the python app
 This app was built to be used with the above modules and packages, to be run on python3.6, and was made to
 work on Ubuntu 18.04. This application should work on other systems if the libraries are all
@@ -52,6 +78,7 @@ The information in the Rest API can be viewed by navigating to http://127.0.0.1:
 also query by filename by navigating to http://127.0.0.1:5000/file/A.xml if you uploaded the file A.xml and wanted to access that
 information for example.
 
+------
 #### Bonus Features
 * Does not allow for the same file to uploaded twice
     * In this case an error message will be shown and the option to either
@@ -65,6 +92,8 @@ to display parsed information in html table
 * When the 'Clear Stored Data' button on the query page is pressed, it also clears
 the file information in the REST API, that way the HTML table and the Rest API are always in sync
 
+
+----
 ### Closing Remarks
 
 I wanted to thank you for again for the opportunity to apply and to take part in this assessment. If you have 
