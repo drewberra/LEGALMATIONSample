@@ -3,7 +3,7 @@ Thank you for the opportunity to work on this assessment, it has beem a pleasure
 and I hope you are happy with the work and skills that I have demonstrated here.
 
 ### Setting Up
-I completed this project using Python/Flask, and thusly imported several modules 
+I completed this project using Python/Flask, and thus imported several modules 
 from Flask and other packages which need to be installed. You can do this by either 
 using `pip install` and individually installing all of the packages laid out below (Flask, Flask-RESTFul, etc.) or 
 you can use `pip install -r requirements.txt`.
@@ -31,7 +31,7 @@ these steps:
 terminal
     * `deactivate`
 
-**_Note:_** If having trouble with this check out [this](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/) link for assitance.
+**_Note:_** If having trouble with this check out this [link](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/) for assistance.
     
 ------
 
@@ -65,9 +65,9 @@ This app was built to be used with the above modules and packages, to be run on 
 work on Ubuntu 18.04. This application should work on other systems if the libraries are all
 installed properly, but it needs to be run an at least python 3.6 as it was not tested using any previous versions.
  
-Once everything is properly installed, run `python3.6 main.py` from within your virtual environment 
+Once inside the virtualenv and everything is properly installed, run `python3.6 main.py` 
 to launch the application. You can then view and interact with the html interface that I created by going to
-http://127.0.0.1:5000/. This should also be displayed in your terminal when the program is running.
+http://127.0.0.1:5000/. This link will also be displayed in your terminal when the program is running.
 From here you will be able to upload .xml files which will be properly parsed and subsequently stored. The parsed
 information will be stored in two places, it will be stored in a .txt file that is used to display the information
 in an easy to understand table that can be accessed by clicking the `query` button on the homepage. Once on the query page 
@@ -75,8 +75,8 @@ you will be able to either view the data, navigate back to the home page or clea
 place where the parsed information is stored is within the Rest API.
 
 The information in the Rest API can be viewed by navigating to http://127.0.0.1:5000/api/all. You can
-also query by filename by navigating to http://127.0.0.1:5000/file/A.xml if you uploaded the file A.xml and wanted to access that
-information for example.
+also query by filename, for example if you uploaded A.xml and wanted to view the information pertaining to that file you
+would navigate to http://127.0.0.1:5000/file/A.xml.
 
 ------
 #### Bonus Features
