@@ -1,24 +1,87 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask_restful import Api, Resource, reqparse
 from werkzeug import secure_filename
 import xml.etree.ElementTree as ET
+import atexit
 import re
-# from flask_rest_jsonapi import Api, ResourceDetail, ResourceList
-# from flask_sqlalchemy import SQLAlchemy
-# from marshmallow_jsonapi.flask import Schema
-# from marshmallow_jsonapi import fields
 
 UPLOAD_FOLDER = '/tmp/'
 ALLOWED_EXTENSIONS = set(['xml'])
 
+app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+api = Api(app)
+
 # Global Variables
-parsed_info = list()
+files = [
+    # {
+    #     "file": "Example.xml",
+    #     "Plaintiffs": "This is where the plaintiff\'s name will be displayed.",
+    #     "Defendants": "This is where the defendant\'s name will be displayed."
+    # }
+]
 file_data_points = {}
 storage_file_name = 'ParsedData.txt'
 delimiter = '|||'
 
-app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# class that is used to define and interact with REST api is inspired from the example at the following link
+# https://codeburst.io/this-is-how-easy-it-is-to-create-a-rest-api-8a25122ab1f3
+class DocInfo(Resource):
+    def get(self, filename):
+        for title in files:
+            if filename == title["file"]:
+                return title, 200
+        return "Document not found", 404
+
+    def post(self, filename):
+        parser = reqparse.RequestParser()
+        parser.add_argument('Plaintiff')
+        parser.add_argument('Defendants')
+        arguments = parser.parse_args()
+
+        for title in files:
+            if filename == title["file"]:
+                return "{} has already been uploaded".format(filename), 400
+
+        title = {
+            'file': filename,
+            'Plaintiffs': arguments['Plaintiffs'],
+            'Defendants': arguments['Defendants']
+        }
+
+        files.append(title)
+        return title, 201
+
+    def put(self, filename):
+        parser = reqparse.RequestParser()
+        parser.add_argument('Plaintiffs')
+        parser.add_argument('Defendants')
+        arguments = parser.parse_args()
+
+        for title in files:
+            if filename == title['file']:
+                title['Plaintiffs'] = arguments['Plaintiffs']
+                title['Defendants'] = arguments['Defendants']
+                return title, 200
+
+        title = {
+            'file': filename,
+            'Plaintiffs': arguments['Plaintiffs'],
+            'Defendants': arguments['Defendants']
+        }
+
+        files.append(title)
+        return title, 201
+
+    def delete(self, filename):
+        global files
+        files = [title for title in files if title['file'] != filename]
+        return "{} was successfully removed.".format(filename), 200
+
+
+api.add_resource(DocInfo, "/file/<string:filename>")
 
 
 def allowed_file(filename):
@@ -26,22 +89,20 @@ def allowed_file(filename):
         filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 
-# Currently prints out all text in xml file, including non if no text present
-# use this logic to find all instances of 'defendant', 'defendants', and 'plaintiff'
-# and then search in this area to find the names of them
-# After this point we can store them in an sqllite db that can later to be queried
+# Parses our xml file, and stores the results in our api and a text file that is used to easily display the parsed data
+# on data_display.html
 def xml_parse(fname):
     global file_data_points
-    global parsed_info
-
-    tree = ET.parse(fname)
-    relevantText = list()
-    for elem in tree.getiterator():
-        if len(str(elem.text)) > 1:
-            relevantText.append(str(elem.text))
+    global files
 
     if os.path.exists(storage_file_name):
         write_flag = 'a'
+        with open(storage_file_name, 'r') as file_check:
+            for line in file_check.readlines():
+                if re.search(fname, line):
+                    file_check.close()
+                    return True
+
     else:
         write_flag = 'w'
 
@@ -49,16 +110,21 @@ def xml_parse(fname):
     storage_file.write(fname)
     storage_file.close()
 
+    tree = ET.parse(fname)
+    relevantText = list()
+    for elem in tree.getiterator():
+        if len(str(elem.text)) > 1:
+            relevantText.append(str(elem.text))
+
     file_data_points['file'] = fname
 
     # Removes instances of 'None' from the text
     relevantText[:] = [x for x in relevantText if x != 'None']
     text_search(relevantText)
-    print(file_data_points)
-    parsed_info.append(file_data_points.copy())
-    print(parsed_info)
+    files.append(file_data_points.copy())
     file_data_points.clear()
-    print(relevantText)
+
+    return False
 
 
 def def_description(def_text, text):
@@ -68,11 +134,12 @@ def def_description(def_text, text):
     def_name = list()
     innerbreak = False
     outbreak = False
+
+    # Searches for key words that have been observed to bracket the information that we want find
     for i in def_text:
         if len(def_text[i]) < 25:
             j = i
             while j >= 0:
-                # Can split into elif tree if bugs are discovered
                 if re.search('vs', text[j]) or re.search('v\.', text[j]):
                     k = j + 1
                     while k < sizeoftext:
@@ -123,11 +190,12 @@ def plaint_description(plaint_text, text):
     plaint_name = list()
     innerbreak = False
     outbreak = False
+
+    # Searches for key words that have been observed to bracket the information that we want find
     for i in plaint_text:
         if len(plaint_text[i]) < 25:
             j = i
             while j < sizeoftext:
-                # Can split into elif tree if bugs are discovered
                 if re.search('vs', text[j]) or re.search('v\.', text[j]):
                     k = j - 1
                     while k >= 0:
@@ -174,6 +242,7 @@ def plaint_description(plaint_text, text):
     return " ".join(mod_plaint_name)
 
 
+# Searches through the text provided to find the starting points for
 def text_search(text):
     global file_data_points
 
@@ -182,8 +251,10 @@ def text_search(text):
     i = 0
     storage_file = open(storage_file_name, "a")
 
-    # Iterates through the text of the doc and finds all occurances of 'Defendant' and 'Plaintiff'
-    # Stores these in two dictionaries, with the key being their location in the text list
+    # Iterates through the text of the doc and finds all occurrences of 'Defendant' and 'Plaintiff'
+    # Stores these in two dictionaries, with the key being their location index in text list and the item being
+    # the string itself. These are then provided to the plaint_description and def_description along with the text list
+    # to find and format the information that we want.
     for line in text:
 
         if re.search('Plaintiff', line):
@@ -205,19 +276,27 @@ def text_search(text):
 
     def_string = def_description(def_text, text)
 
+    # The plaint_string and def_string that were found are stored in our storage file to be displayed on data_display
+    # and then subsequently stored in our API
     storage_file.write(delimiter + plaint_string)
     storage_file.write(delimiter + def_string)
     storage_file.write("\n")
     storage_file.close()
 
-    file_data_points['Plaintiff'] = plaint_string
+    file_data_points['Plaintiffs'] = plaint_string
     file_data_points['Defendants'] = def_string
 
 
-# Currently only allows the upload of one file
-# Need to reload page with success description
-# Need to define function to then parse data and store in sql db of some sort
-#  - Possibly SQLLite?
+# Simple function that removes the file that stores the parsed xml data for easy display on data_display.html
+def exit_handler():
+    if os.path.exists(storage_file_name):
+        os.remove(storage_file_name)
+
+
+atexit.register(exit_handler)
+
+
+# Route and code for the homepage
 @app.route('/', methods=['GET', 'POST'])
 def home_page():
     if request.method == 'POST':
@@ -228,6 +307,9 @@ def home_page():
     return render_template('index.html')
 
 
+# Route and code for the xml upload page
+# If file has already been uploaded we are sent to file_exists() without the file being parsed or subsequently stored
+# If the file is not xml, then the page is just refreshed and nothing is done with the file
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
@@ -236,12 +318,16 @@ def upload_file():
             fname = secure_filename(f.filename)
             f.save(secure_filename(f.filename))
             f.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
-            xml_parse(fname)
+            file_state = xml_parse(fname)
             os.remove(fname)
-            return redirect(url_for('up_success'))
+            if file_state:
+                return redirect(url_for('file_exists'))
+            else:
+                return redirect(url_for('up_success'))
     return render_template('upload.html')
 
 
+# Route and code for successful xml upload
 @app.route('/success', methods=['GET', 'POST'])
 def up_success():
     if request.method == 'POST':
@@ -249,6 +335,19 @@ def up_success():
     return render_template('upload_success.html')
 
 
+# Route and code for unsuccessful xml upload due to file having been already uploaded
+@app.route('/priorfile', methods=['GET', 'POST'])
+def file_exists():
+    if request.method == 'POST':
+        if request.form['button'] == 'Try another file':
+            return redirect(url_for('upload_file'))
+        elif request.form['button'] == 'Return to Home':
+            return redirect(url_for('home_page'))
+    return render_template('upload_failure.html')
+
+
+# Route and code for our query page that allows users to see a graphical interface of the parsed data or clear the data
+# that has been stored in both the file and our API
 @app.route('/query', methods=['GET', 'POST'])
 def query_page():
     if request.method == 'POST':
@@ -257,7 +356,10 @@ def query_page():
         elif request.form['button'] == 'Display Parsed XML Data':
             return redirect(url_for('display_data'))
         elif request.form['button'] == 'Clear Stored data':
-            os.remove(storage_file_name)
+            global files
+            if os.path.exists(storage_file_name):
+                os.remove(storage_file_name)
+                files = []
     return render_template('query.html')
 
 
@@ -281,9 +383,10 @@ def display_data():
     return render_template('data_display.html', data_points=data_points, data_history=data_history)
 
 
+# The following is the route that allows us to view the full API
 @app.route('/api/all', methods=['GET'])
 def display_api():
-    return jsonify(parsed_info)
+    return jsonify(files)
 
 
 if __name__ == '__main__':
