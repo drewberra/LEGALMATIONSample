@@ -296,6 +296,12 @@ def exit_handler():
 atexit.register(exit_handler)
 
 
+def shutdown_server():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with Werkzeug Server')
+    func()
+
 # Route and code for the homepage
 @app.route('/', methods=['GET', 'POST'])
 def home_page():
@@ -304,6 +310,9 @@ def home_page():
             return redirect(url_for('upload_file'))
         elif request.form['button'] == 'Query':
             return redirect(url_for('query_page'))
+        elif request.form['button'] == 'Shutdown Server':
+            shutdown_server()
+            return 'Server shutting down...'
     return render_template('index.html')
 
 
@@ -390,4 +399,4 @@ def display_api():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
