@@ -83,6 +83,7 @@ would navigate to http://127.0.0.1:5000/file/A.xml.
 * Does not allow for the same file to uploaded twice
     * In this case an error message will be shown and the option to either
     upload another file, or return to home will be given
+* Does not allow for non xml files to be uploaded
 * Multiple ways to view file information
 * Once files have been successful parsed they are deleted so that they don't
 take up extra space
